@@ -57,6 +57,8 @@ public class Game : MonoBehaviour
     public GameObject Fact; // Объект для показа фактов о вопросе
     [Tooltip("Кнопка следующий вопрос")]
     public GameObject NextQuestion; // Кнопка для следующего вопроса
+    [Tooltip("Кнопка меню")]
+    public GameObject MenuBttn; // Кнопка для следующего вопроса
     [Tooltip("Панель с итогом викторины")]
     public GameObject EndPanel; // Панель с итогами игры
     public Text EndText; // Текст с поздравлением об окончании игры
@@ -119,7 +121,7 @@ public class Game : MonoBehaviour
         CountFalseAnswText.text = "Ошибок: " + ThemeList[IndexTheme].FalseAnsw.ToString();
         EndPanel.SetActive(false); // Закрываем панель итога игры
         QuestionGenerate(); // Запуск генератора вопросов
-        Menu.SetActive(false); // Закрываем панель итога игры
+        Menu.SetActive(false); // Закрываем панель меню игры
     }
 
     public void Resume() // Кнопка продолжить
@@ -130,9 +132,16 @@ public class Game : MonoBehaviour
         NextQuestion.SetActive(false); // Убираем кнопку продолжить
     }
 
+    public void StartNewGame()
+    {
+        ThemeList[IndexTheme].randQ = ThemeList[IndexTheme].CountQ = ThemeList[IndexTheme].RightAnsw = ThemeList[IndexTheme].FalseAnsw = 0;
+        OnClickPlay(IndexTheme);
+    }
+
     public void ExitMenu() // Кнопка выход в меню
     {
         NextQuestion.SetActive(false);
+        for (int i = 0; i < AnswersBttns.Length; i++) AnswersBttns[i].gameObject.SetActive(false); //
         if (ThemeList[IndexTheme].TimerActive) { StopCoroutine("TimerQuestions"); TimerText.text = ""; }
         if (TFIcon.gameObject.activeSelf) TFIcon.gameObject.SetActive(false);
         EndPanel.SetActive(false);
@@ -140,17 +149,9 @@ public class Game : MonoBehaviour
         CompletedTest();
     }
 
-    void CompletedTest() // Просчет процентов прохождения тестов
+    void CompletedTest() // Просчет прохождения тестов
     {
-        for(int i = 0; i < ThemeList.Count; i++)
-        {
-            if(ThemeList[i].randQ != 0)
-            {
-                int r = 100 / (ThemeList[i].QuestionList.Count / ThemeList[i].randQ);
-                ThemeList[i].CompletedTextTheme.text = r + "%";
-            }
-            else { ThemeList[i].CompletedTextTheme.text = "0%"; }
-        }
+        for(int i = 0; i < ThemeList.Count; i++){ThemeList[i].CompletedTextTheme.text = ThemeList[i].randQ + " из " + ThemeList[i].QuestionList.Count;}
     }
     
     void QuestionGenerate() // Генератор вопросов
@@ -158,7 +159,7 @@ public class Game : MonoBehaviour
         if (ThemeList[IndexTheme].randQ < ThemeList[IndexTheme].QuestionList.Count) // проверка кол-ва вопросов
         {
             Fact.SetActive(false); //
-            CountQText.text = ThemeList[IndexTheme].CountQ.ToString() + " вопрос из " + ThemeList[IndexTheme].QuestionList.Count;
+            CountQText.text = ThemeList[IndexTheme].CountQ+1 + " вопрос из " + ThemeList[IndexTheme].QuestionList.Count;
             CountFalseAnswText.text = "Ошибок: " + ThemeList[IndexTheme].FalseAnsw.ToString();
             crntQ = qList[ThemeList[IndexTheme].randQ] as QuestionList; // Рандомизатор вопросов из листа
 
@@ -194,6 +195,7 @@ public class Game : MonoBehaviour
 
     IEnumerator AnimBttns() // Анимация кнопок (Появление и активность)
     {
+        MenuBttn.SetActive(false);
         yield return new WaitForSeconds(1); // Ожидание секунда
         for (int i = 0; i < AnswersBttns.Length; i++) AnswersBttns[i].interactable = false; // Отключение кликабельности кнопок
         int a = 0;
@@ -209,8 +211,7 @@ public class Game : MonoBehaviour
 
         if (ThemeList[IndexTheme].TimerActive) { StartCoroutine("TimerQuestions"); } // Если активен таймер, то запускаем корутины таймера
 
-        ThemeList[IndexTheme].randQ++; // увеличиваем счетчик вопросов
-        ThemeList[IndexTheme].CountQ++; // 
+        MenuBttn.SetActive(true);
 
         yield break;
     }
@@ -247,6 +248,8 @@ public class Game : MonoBehaviour
 
         TFIcon.gameObject.SetActive(false); // Отключение икноки
         NextQuestion.SetActive(true);
+        ThemeList[IndexTheme].randQ++; // увеличиваем счетчик вопросов
+        ThemeList[IndexTheme].CountQ++; // 
         SaveGame();
         yield break; // Закрытие корутины
     }
@@ -289,6 +292,8 @@ public class Game : MonoBehaviour
         ThemeList[IndexTheme].FalseAnsw++; // Прибавляем неправильные ответы
         TFIcon.sprite = TFIcons[2];
         TFtext.text = "Время вышло!";
+        ThemeList[IndexTheme].randQ++; // увеличиваем счетчик вопросов
+        ThemeList[IndexTheme].CountQ++; // 
         NextQuestion.SetActive(true);
         SaveGame();
     }
@@ -301,7 +306,6 @@ public class Game : MonoBehaviour
             PlayerPrefs.SetInt("Countq" + i, ThemeList[i].CountQ);
             PlayerPrefs.SetInt("Right" + i, ThemeList[i].RightAnsw);
             PlayerPrefs.SetInt("False" + i, ThemeList[i].FalseAnsw);
-            Debug.Log(i);
         }
         PlayerPrefs.SetString("sv", ThemeList[0].NameTheme);
     }
@@ -343,7 +347,7 @@ public class ThemeList //
     public Text CompletedTextTheme; // Текст на сколько завершено
     [HideInInspector]
     public bool OpenQuestions; // Переменная открытия вопросов в инспекторе
-    [HideInInspector]
+    //[HideInInspector]
     public int randQ; // Значение рандома вопросов
     [HideInInspector]
     public int CountQ; // Подсчет очков
